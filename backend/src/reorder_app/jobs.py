@@ -28,6 +28,17 @@ def extract_sku(question: str) -> str | None:
 
 
 def _database_url() -> str:
+    """Chapter 10's real finding: Fly's attached Postgres offers a
+    PgBouncer proxy (port 5432) for connection fan-in, but this app
+    already pools client-side (both `AsyncPostgresSaver` and
+    `PostgresQueue` carry their own connection pools), so the proxy adds
+    nothing and actively breaks things: SAQ's advisory locks and
+    psycopg's own server-side prepared statements both need a session
+    the pooler's transaction-pooling mode won't hold onto, confirmed
+    live by connections dropping mid-query. `DATABASE_URL` on Fly points
+    at Postgres directly (port 5433, bypassing the proxy entirely), not
+    at the pooler.
+    """
     return os.environ["DATABASE_URL"]
 
 
