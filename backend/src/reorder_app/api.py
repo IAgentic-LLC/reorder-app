@@ -24,6 +24,7 @@ if sys.platform == "win32":
     # lives here, at module import time, not inside a function.
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from langgraph.types import Command
 from pydantic import BaseModel
@@ -49,6 +50,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="reorder-app", lifespan=lifespan)
 register_auth_exception_handlers(app)
+
+# Chapter 8: the React frontend runs on a different origin (Vite's dev
+# server, http://localhost:5173) than this API (http://127.0.0.1:8000).
+# Without this, the browser's own same-origin policy blocks every request
+# before it reaches a single route, no code here can catch or fix that.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class QuestionRequest(BaseModel):
