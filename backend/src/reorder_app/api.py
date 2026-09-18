@@ -1,14 +1,11 @@
-"""Chapter 5: a real API in front of the reorder agent's unchanged logic.
+"""Chapters 5-6: a real API in front of the reorder agent's unchanged
+logic, now with real identity attached to every request.
 
 Wraps `reliable_agents_labs.reorder_agent.ask_reorder_agent_with_tools`
 (imported, not copied, chapter 4's whole point is that this logic never
 gets rewritten) behind a FastAPI endpoint with a typed request/response
 contract and one consistent error shape, instead of a bare 500 with a
 stack trace a browser has no business seeing.
-
-No authentication yet, deliberately. Chapter 6 adds it. Every request this
-endpoint accepts right now is anonymous, on purpose, so the gap stays
-visible instead of getting quietly patched over before its own chapter.
 """
 
 from dotenv import load_dotenv
@@ -18,10 +15,12 @@ from pydantic import BaseModel
 
 from reliable_agents_labs.models import ModelClient
 from reliable_agents_labs.reorder_agent import ask_reorder_agent_with_tools
+from reorder_app.auth import Principal, register_auth_exception_handlers, verify_token
 
 load_dotenv()
 
 app = FastAPI(title="reorder-app")
+register_auth_exception_handlers(app)
 
 
 class QuestionRequest(BaseModel):
@@ -84,6 +83,7 @@ async def get_model_client() -> ModelClient | None:
 async def ask_question(
     payload: QuestionRequest,
     client: ModelClient | None = Depends(get_model_client),
+    principal: Principal = Depends(verify_token),
 ) -> AnswerResponse:
     try:
         answer = await ask_reorder_agent_with_tools(payload.question, client=client)

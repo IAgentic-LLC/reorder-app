@@ -9,7 +9,17 @@ from fastapi.testclient import TestClient
 from reliable_agents_labs.models import ModelResult
 
 from reorder_app.api import app, get_model_client
+from reorder_app.auth import Principal, verify_token
 from tests.fakes import ScriptedModelClient
+
+
+def _bypass_auth():
+    """Chapter 5's tests are about the API contract, not chapter 6's
+    identity check. Overriding verify_token keeps them testing exactly
+    what they said they test, chapter 6's own tests exercise this
+    dependency for real.
+    """
+    app.dependency_overrides[verify_token] = lambda: Principal(subject="test|bypassed")
 
 
 def test_ask_question_returns_grounded_answer():
@@ -25,6 +35,7 @@ def test_ask_question_returns_grounded_answer():
         ]
     )
     app.dependency_overrides[get_model_client] = lambda: scripted
+    _bypass_auth()
     try:
         client = TestClient(app)
         response = client.post(
@@ -43,6 +54,7 @@ def test_upstream_model_failure_returns_typed_error_shape():
             raise RuntimeError("simulated provider outage")
 
     app.dependency_overrides[get_model_client] = lambda: BrokenClient()
+    _bypass_auth()
     try:
         client = TestClient(app)
         response = client.post("/v1/questions", json={"question": "anything"})
@@ -57,7 +69,11 @@ def test_upstream_model_failure_returns_typed_error_shape():
 
 
 def test_malformed_request_returns_422_not_a_raw_traceback():
-    client = TestClient(app)
-    response = client.post("/v1/questions", json={"not_a_question": "oops"})
+    _bypass_auth()
+    try:
+        client = TestClient(app)
+        response = client.post("/v1/questions", json={"not_a_question": "oops"})
+    finally:
+        app.dependency_overrides.clear()
 
     assert response.status_code == 422
