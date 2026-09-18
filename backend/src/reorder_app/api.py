@@ -30,10 +30,10 @@ from langgraph.types import Command
 from pydantic import BaseModel
 from reliable_agents_labs.inventory import check_inventory
 from reliable_agents_labs.models import ModelClient
-from reliable_agents_labs.reorder_agent import ask_reorder_agent_with_tools
 
 from reorder_app.auth import Principal, register_auth_exception_handlers, verify_token
 from reorder_app.jobs import extract_sku, get_queue
+from reorder_app.observability import ask_reorder_agent_tagged, run_reorder_workflow_tagged
 from reorder_app.workflow import build_persistent_approval_workflow, get_postgres_checkpointer
 
 load_dotenv()
@@ -137,7 +137,7 @@ async def ask_question(
     principal: Principal = Depends(verify_token),
 ) -> AnswerResponse:
     try:
-        answer = await ask_reorder_agent_with_tools(payload.question, client=client)
+        answer = await ask_reorder_agent_tagged(payload.question, client=client)
     except Exception as exc:
         raise UpstreamModelError(detail=str(exc)) from exc
     return AnswerResponse(answer=answer)
@@ -186,8 +186,9 @@ async def start_reorder_request(
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
     try:
-        result = await request.app.state.reorder_graph.ainvoke(
-            {**_EMPTY_APPROVAL_STATE, "question": payload.question}, config
+        initial_state = {**_EMPTY_APPROVAL_STATE, "question": payload.question}
+        result = await run_reorder_workflow_tagged(
+            request.app.state.reorder_graph, initial_state, config
         )
     except Exception as exc:
         raise UpstreamModelError(detail=str(exc)) from exc
@@ -212,8 +213,10 @@ async def decide_reorder_request(
     """
     config = {"configurable": {"thread_id": thread_id}}
     try:
-        result = await request.app.state.reorder_graph.ainvoke(
-            Command(resume={"approved": payload.approved, "note": payload.note}), config
+        result = await run_reorder_workflow_tagged(
+            request.app.state.reorder_graph,
+            Command(resume={"approved": payload.approved, "note": payload.note}),
+            config,
         )
     except Exception as exc:
         raise UpstreamModelError(detail=str(exc)) from exc
