@@ -1,0 +1,15 @@
+# Model IDs live here, not hardcoded in source or scattered through the
+# book's prose, same reproducibility contract Book 2 uses. Notice this
+# file has to exist here, in reorder-app, even though the model-calling
+# code (build_model_client) lives entirely in reliable-agents-labs: the
+# config path is deliberately relative to whichever process is running,
+# not baked into the package. Chapter 5's real lesson: reusing another
+# repo's logic as a dependency is not the same as reusing its runtime
+# environment, config travels with the process, not the import.
+
+answer_model:
+  provider: gemini
+  model_id: gemini-3.6-flash
+  # Anthropic alternative:
+  # provider: anthropic
+  # model_id: claude-sonnet-5
