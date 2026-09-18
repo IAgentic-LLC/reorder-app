@@ -13,6 +13,12 @@ dependencies = [
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "langgraph>=1.2.11",
+    "langgraph-checkpoint-postgres>=3.1.2",
+    # langgraph-checkpoint-postgres pulls in plain psycopg with no pq
+    # wrapper at all, "ImportError: no pq wrapper available" on first
+    # real import, not a hypothetical. The binary extra ships its own
+    # bundled libpq, confirmed against a live source, not guessed.
+    "psycopg[binary,pool]>=3.3.6",
     "openai>=3.13.0",
     "pydantic>=2.13.5",
     "pyjwt[crypto]>=2.10.1",
