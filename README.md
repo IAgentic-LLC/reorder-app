@@ -4,14 +4,14 @@ Full-stack product: the reorder agent, hardened. Continues Book 2's Projects 1 a
 
 Companion product code for *Production AI Products* (Book 3 of the "Production AI Agent Engineering" series). Every chapter has a matching git tag here, real, tested, runnable code, not illustrative snippets.
 
-**Status: Phase 2 scaffold.** Directory structure, dependency manifest, CI, and the five-tier testing taxonomy are wired and passing. Real product logic starts in Phase 4.
+**Status: chapters 4-10 complete** (tags `ch05-end` through `ch10-end`; chapter 4 introduces no new code here, see the manuscript). A real FastAPI backend, Auth0 authentication, a Postgres-backed durable LangGraph workflow, a React frontend, a SAQ background worker, and a live Fly.io deployment (`reorder-app-book3.fly.dev`).
 
 ## Repository shape
 
 ```
 backend/src/reorder_app/   application code
 frontend/                    React frontend
-workers/                     Arq background workers
+workers/                     SAQ background workers
 tests/{unit,orchestration,integration,contract,evals}/
 config/
 docs/diagrams/
