@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
+
 # Read lazily, not as module-level constants. A real run of this app
 # found the bug a constant would hide: `import reorder_app.auth` (this
 # module) happens before `api.py`'s own `load_dotenv()` line runs, so

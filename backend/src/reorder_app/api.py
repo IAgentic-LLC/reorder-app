@@ -28,10 +28,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from langgraph.types import Command
 from pydantic import BaseModel
-
+from reliable_agents_labs.inventory import check_inventory
 from reliable_agents_labs.models import ModelClient
 from reliable_agents_labs.reorder_agent import ask_reorder_agent_with_tools
+
 from reorder_app.auth import Principal, register_auth_exception_handlers, verify_token
+from reorder_app.jobs import extract_sku, get_queue
 from reorder_app.workflow import build_persistent_approval_workflow, get_postgres_checkpointer
 
 load_dotenv()
@@ -45,7 +47,16 @@ async def lifespan(app: FastAPI):
     async with get_postgres_checkpointer() as checkpointer:
         await checkpointer.setup()
         app.state.reorder_graph = await build_persistent_approval_workflow(checkpointer)
-        yield
+
+        # Chapter 9: the same queue a worker process drains, opened once
+        # for this app's whole lifetime, not once per request.
+        job_queue = get_queue()
+        await job_queue.connect()
+        app.state.job_queue = job_queue
+        try:
+            yield
+        finally:
+            await job_queue.disconnect()
 
 
 app = FastAPI(title="reorder-app", lifespan=lifespan)
@@ -147,6 +158,7 @@ class ApprovalResponse(BaseModel):
     thread_id: str
     logged: bool
     note: str
+    purchase_order_queued: bool = False
 
 
 _EMPTY_APPROVAL_STATE = {
@@ -206,6 +218,27 @@ async def decide_reorder_request(
     except Exception as exc:
         raise UpstreamModelError(detail=str(exc)) from exc
 
+    queued = False
+    if result.get("logged"):
+        # Chapter 9: an approved, logged reorder is the one branch worth
+        # a real purchase order, placed off the request path so a slow
+        # or unreliable supplier call never makes this endpoint wait.
+        sku = extract_sku(result.get("question", ""))
+        if sku is not None:
+            record = check_inventory(sku)
+            if record is not None:
+                job = await request.app.state.job_queue.enqueue(
+                    "place_purchase_order",
+                    key=f"purchase-order:{thread_id}",
+                    thread_id=thread_id,
+                    sku=sku,
+                    quantity=record.reorder_point * 2,
+                )
+                queued = job is not None
+
     return ApprovalResponse(
-        thread_id=thread_id, logged=result.get("logged", False), note=result.get("note", "")
+        thread_id=thread_id,
+        logged=result.get("logged", False),
+        note=result.get("note", ""),
+        purchase_order_queued=queued,
     )

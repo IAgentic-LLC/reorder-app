@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=1.5.0",
-    "saq>=0.26.4",
+    "saq[postgres]>=0.26.4",
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "langgraph>=1.2.11",

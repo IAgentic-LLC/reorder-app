@@ -12,9 +12,9 @@ import os
 import pytest
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.types import Command
-
 from reliable_agents_labs.models import ModelResult
 from reliable_agents_labs.reorder_workflow import build_approval_workflow
+
 from tests.fakes import ScriptedModelClient
 
 pytestmark = pytest.mark.skipif(

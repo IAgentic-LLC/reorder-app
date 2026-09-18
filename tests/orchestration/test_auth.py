@@ -10,10 +10,9 @@ import time
 import jwt
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
-
 from reorder_app import auth
 from reorder_app.api import app, get_model_client
-from reorder_app.auth import _get_jwks_client
+
 from tests.fakes import ScriptedModelClient
 
 _TEST_AUDIENCE = "https://reorder-app.dev/api"

@@ -10,6 +10,7 @@ export interface ApprovalResponse {
   thread_id: string
   logged: boolean
   note: string
+  purchase_order_queued: boolean
 }
 
 export interface ProblemDetail {

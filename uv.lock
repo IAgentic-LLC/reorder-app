@@ -1488,7 +1488,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "reliable-agents-labs" },
-    { name = "saq" },
+    { name = "saq", extra = ["postgres"] },
     { name = "tenacity" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1514,7 +1514,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.3" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "reliable-agents-labs", git = "https://github.com/Sebuliba-Adrian/reliable-agents-labs.git" },
-    { name = "saq", specifier = ">=0.26.4" },
+    { name = "saq", extras = ["postgres"], specifier = ">=0.26.4" },
     { name = "tenacity", specifier = ">=9.1.4" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.53.0" },
 ]
@@ -1588,6 +1588,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/da/b3/38c164b8766e6ac92e9faf961f4dd1103580227edbd95da18f08c07233de/saq-0.26.4.tar.gz", hash = "sha256:e29a3c8b7df722c28f6b8db9566571fc0bbdb32d0fcccbaa3af9517f46a6011c", size = 75417, upload-time = "2026-05-21T15:00:55.144Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/82/cf178bee890a1b7e17950c778c752b7dc342c93f254bc3143a4375378a52/saq-0.26.4-py3-none-any.whl", hash = "sha256:7a1f81ae2a95b6c34b170bc9b8cf84423052d9612f62cf0ec426c1fd27e35b2c", size = 63222, upload-time = "2026-05-21T15:00:53.503Z" },
+]
+
+[package.optional-dependencies]
+postgres = [
+    { name = "psycopg", extra = ["pool"] },
 ]
 
 [[package]]

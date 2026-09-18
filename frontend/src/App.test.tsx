@@ -35,6 +35,7 @@ describe('Dashboard', () => {
       thread_id: 'thread-a',
       logged: true,
       note: 'looks good',
+      purchase_order_queued: true,
     })
 
     const user = userEvent.setup()
@@ -52,6 +53,7 @@ describe('Dashboard', () => {
 
     await waitFor(() => expect(screen.getByText(/^approved$/i)).toBeInTheDocument())
     expect(api.decideReorderRequest).toHaveBeenCalledWith('fake-token', 'thread-a', true, '')
+    expect(screen.getByText(/purchase order queued/i)).toBeInTheDocument()
   })
 
   it('renders a no-reorder-needed result without approval controls', async () => {

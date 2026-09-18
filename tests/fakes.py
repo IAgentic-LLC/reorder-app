@@ -27,3 +27,18 @@ class ScriptedModelClient:
         history: list[dict] | None = None,
     ) -> ModelResult:
         return next(self._results)
+
+
+class FakeJobQueue:
+    """Chapter 9's orchestration-tier stand-in for the real SAQ queue.
+    Records what got enqueued instead of touching a real Postgres
+    connection, the same "swap the real thing for a double behind the
+    same seam" pattern as `ScriptedModelClient`.
+    """
+
+    def __init__(self) -> None:
+        self.enqueued: list[tuple[str, dict]] = []
+
+    async def enqueue(self, function_name: str, **kwargs) -> object:
+        self.enqueued.append((function_name, kwargs))
+        return object()

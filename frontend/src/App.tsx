@@ -11,6 +11,7 @@ interface QueueItem {
   answer: string | null
   note: string
   errorMessage?: string
+  purchaseOrderQueued?: boolean
 }
 
 const STATUS_LABEL: Record<QueueStatus, string> = {
@@ -146,6 +147,7 @@ function QueueRow({ item, onUpdate }: { item: QueueItem; onUpdate: (item: QueueI
           ...item,
           status: approved ? 'approved' : 'rejected',
           note: result.note,
+          purchaseOrderQueued: result.purchase_order_queued,
         })
       } catch (err) {
         onUpdate({
@@ -207,6 +209,9 @@ function QueueRow({ item, onUpdate }: { item: QueueItem; onUpdate: (item: QueueI
         <p className="decision-note">
           Note: <strong>{item.note}</strong>
         </p>
+      )}
+      {item.status === 'approved' && item.purchaseOrderQueued && (
+        <p className="decision-note">Purchase order queued with the supplier.</p>
       )}
     </div>
   )

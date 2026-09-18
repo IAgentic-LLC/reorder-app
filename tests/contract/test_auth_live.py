@@ -11,8 +11,8 @@ import os
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-
 from reorder_app.api import app, get_model_client
+
 from tests.fakes import ScriptedModelClient
 
 pytestmark = pytest.mark.skipif(

@@ -7,9 +7,9 @@ new reason.
 
 from fastapi.testclient import TestClient
 from reliable_agents_labs.models import ModelResult
-
 from reorder_app.api import app, get_model_client
 from reorder_app.auth import Principal, verify_token
+
 from tests.fakes import ScriptedModelClient
 
 
