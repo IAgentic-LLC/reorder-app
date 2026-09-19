@@ -34,6 +34,7 @@ from reliable_agents_labs.models import ModelClient
 from reorder_app.auth import Principal, register_auth_exception_handlers, verify_token
 from reorder_app.jobs import extract_sku, get_queue
 from reorder_app.observability import ask_reorder_agent_tagged, run_reorder_workflow_tagged
+from reorder_app.secrets_status import process_started_at, secret_digest
 from reorder_app.workflow import build_persistent_approval_workflow, get_postgres_checkpointer
 
 load_dotenv()
@@ -116,6 +117,23 @@ async def handle_upstream_model_error(request: Request, exc: UpstreamModelError)
         status_code=502,
         content=problem.model_dump(),
         media_type="application/problem+json",
+    )
+
+
+class SecretStatusResponse(BaseModel):
+    process_started_at: float
+    secret_digest: str
+
+
+@app.get("/v1/ops/secret-status", response_model=SecretStatusResponse)
+async def secret_status(principal: Principal = Depends(verify_token)) -> SecretStatusResponse:
+    """Chapter 26: never returns a real secret value, only a short hash
+    and this process's own start time, a real, safe way to answer
+    "has this specific machine actually picked up the last rotation
+    yet" without exposing anything an attacker could use directly.
+    """
+    return SecretStatusResponse(
+        process_started_at=process_started_at(), secret_digest=secret_digest()
     )
 
 
