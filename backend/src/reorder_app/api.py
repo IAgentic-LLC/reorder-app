@@ -29,9 +29,10 @@ from fastapi.responses import JSONResponse
 from langgraph.types import Command
 from pydantic import BaseModel
 from reliable_agents_labs.inventory import check_inventory
-from reliable_agents_labs.models import ModelClient
+from reliable_agents_labs.models import ModelClient, build_model_client
 
 from reorder_app.auth import Principal, register_auth_exception_handlers, verify_token
+from reorder_app.cost import CostTrackingModelClient
 from reorder_app.jobs import extract_sku, get_queue
 from reorder_app.observability import ask_reorder_agent_tagged, run_reorder_workflow_tagged
 from reorder_app.secrets_status import process_started_at, secret_digest
@@ -42,12 +43,21 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Chapter 35: one shared tracker for this process's whole lifetime,
+    # wrapping the real default client, so both real model-calling paths
+    # below (`/v1/questions` and the approval workflow) feed the same
+    # cost ledger instead of two separate, inconsistent ones.
+    cost_tracker = CostTrackingModelClient(build_model_client("answer_model"))
+    app.state.cost_tracker = cost_tracker
+
     # One real Postgres connection pool for the app's whole lifetime,
     # not one per request. `.setup()` creates the checkpointer's own
     # tables if they don't exist yet, safe to call every startup.
     async with get_postgres_checkpointer() as checkpointer:
         await checkpointer.setup()
-        app.state.reorder_graph = await build_persistent_approval_workflow(checkpointer)
+        app.state.reorder_graph = await build_persistent_approval_workflow(
+            checkpointer, model_client=cost_tracker
+        )
 
         # Chapter 9: the same queue a worker process drains, opened once
         # for this app's whole lifetime, not once per request.
@@ -137,15 +147,21 @@ async def secret_status(principal: Principal = Depends(verify_token)) -> SecretS
     )
 
 
-async def get_model_client() -> ModelClient | None:
-    """The real seam this chapter's tests depend on. Returning `None` here
-    means "use the real, config-driven adapter", exactly what
-    `ask_reorder_agent_with_tools` already does when its own `client`
-    argument is `None`. A test overrides this dependency with a
-    `ScriptedModelClient` instead, no real network call, no real cost,
-    fully deterministic.
+async def get_model_client(request: Request) -> ModelClient | None:
+    """The real seam this chapter's tests depend on. In production this
+    returns the one shared `CostTrackingModelClient` `lifespan` built,
+    not `None`, since chapter 35: `ask_reorder_agent_with_tools` already
+    treats any object shaped like `ModelClient` the same way, wrapped or
+    not. A test overrides this dependency with a plain `ScriptedModelClient`
+    instead, no real network call, no real cost, fully deterministic.
+    `getattr` with a `None` default, not a bare attribute read: a test
+    that never runs `lifespan` at all (most of this product's own
+    orchestration tests, `app.state.reorder_graph` set by hand instead)
+    never populated `app.state.cost_tracker` either, and falling back to
+    `None` here is exactly `ask_reorder_agent_with_tools`'s own existing
+    "build a default client" behavior, not a new failure mode.
     """
-    return None
+    return getattr(request.app.state, "cost_tracker", None)
 
 
 @app.post("/v1/questions", response_model=AnswerResponse)
@@ -159,6 +175,28 @@ async def ask_question(
     except Exception as exc:
         raise UpstreamModelError(detail=str(exc)) from exc
     return AnswerResponse(answer=answer)
+
+
+class UsageResponse(BaseModel):
+    total_cost_usd: float
+    call_count: int
+
+
+@app.get("/v1/usage", response_model=UsageResponse)
+async def get_usage(
+    client: ModelClient | None = Depends(get_model_client),
+    principal: Principal = Depends(verify_token),
+) -> UsageResponse:
+    """Chapter 35: real, if process-lifetime-only, cost visibility for
+    this product, the same shape as `pkgintel-app`'s own `/v1/usage`
+    (chapter 15), reading whatever tracker `get_model_client` actually
+    handed out rather than reaching into `app.state` a second, separate
+    way, so a test that overrides one dependency sees a consistent
+    answer from both endpoints.
+    """
+    if not isinstance(client, CostTrackingModelClient):
+        return UsageResponse(total_cost_usd=0.0, call_count=0)
+    return UsageResponse(total_cost_usd=client.total_cost_usd, call_count=client.call_count)
 
 
 class ReorderRequestResponse(BaseModel):
