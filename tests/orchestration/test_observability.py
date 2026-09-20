@@ -31,9 +31,7 @@ def _text_result(text: str) -> ModelResult:
 
 
 async def test_the_tagged_question_wrapper_returns_the_same_answer():
-    model = ScriptedModelClient(
-        [_text_result("We currently have 4 units of SKU-1029 in stock.")]
-    )
+    model = ScriptedModelClient([_text_result("We currently have 4 units of SKU-1029 in stock.")])
     answer = await ask_reorder_agent_tagged("How many units of SKU-1029 do we have?", client=model)
     assert answer == "We currently have 4 units of SKU-1029 in stock."
 

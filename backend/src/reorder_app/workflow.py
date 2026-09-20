@@ -31,9 +31,7 @@ def get_postgres_checkpointer():
     return AsyncPostgresSaver.from_conn_string(_database_url())
 
 
-async def build_persistent_approval_workflow(
-    checkpointer, model_client: ModelClient | None = None
-):
+async def build_persistent_approval_workflow(checkpointer, model_client: ModelClient | None = None):
     """Compiles Book 2's approval workflow, unchanged, with a real
     Postgres-backed checkpointer instead of Book 2's own SQLite one.
     `checkpointer` is passed in rather than constructed here, so a

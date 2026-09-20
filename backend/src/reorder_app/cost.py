@@ -41,9 +41,7 @@ class CostTrackingModelClient:
         tools: list[dict] | None = None,
         history: list[dict] | None = None,
     ) -> ModelResult:
-        result = await self._client.generate(
-            system=system, user=user, tools=tools, history=history
-        )
+        result = await self._client.generate(system=system, user=user, tools=tools, history=history)
         self.total_cost_usd += estimate_cost(result)
         self.call_count += 1
         return result

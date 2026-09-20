@@ -42,9 +42,7 @@ PRODUCTS = [
 ]
 
 
-async def _fetch_token(
-    auth0_domain: str, client_id: str, client_secret: str, audience: str
-) -> str:
+async def _fetch_token(auth0_domain: str, client_id: str, client_secret: str, audience: str) -> str:
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"https://{auth0_domain}/oauth/token",

@@ -31,7 +31,9 @@ class _FakeJWKSClient:
         return _FakeSigningKey(_private_key.public_key())
 
 
-def _make_token(*, audience=_TEST_AUDIENCE, issuer=_TEST_ISSUER, exp_delta=3600, subject="test|123"):
+def _make_token(
+    *, audience=_TEST_AUDIENCE, issuer=_TEST_ISSUER, exp_delta=3600, subject="test|123"
+):
     now = int(time.time())
     payload = {"sub": subject, "aud": audience, "iss": issuer, "iat": now, "exp": now + exp_delta}
     return jwt.encode(payload, _private_key, algorithm="RS256")
