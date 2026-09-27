@@ -6,9 +6,9 @@ Chapter 33 of *Production AI Products*. This is a real incident, not a hypotheti
 
 ## Timeline
 
-- **02:04 UTC** — `scripts/synthetic_load_agent.py` fired 15 real, concurrently-generated questions at `reorder-app-book3`.
-- **02:04–02:05 UTC** — All 15 requests eventually returned `200`. Wall-clock latency per request ranged from 15.86s to 21.94s (p50 17.77s), far above this environment's typical single-request latency (1–3s, observed informally throughout this book).
-- **02:05 UTC** — `fly status` checked immediately afterward: exactly two `app` machines, both `started`, no additional machine provisioned during the test.
+- **02:04 UTC**: `scripts/synthetic_load_agent.py` fired 15 real, concurrently-generated questions at `reorder-app-book3`.
+- **02:04-02:05 UTC**: All 15 requests eventually returned `200`. Wall-clock latency per request ranged from 15.86s to 21.94s (p50 17.77s), far above this environment's typical single-request latency (1-3s, observed informally throughout this book).
+- **02:05 UTC**: `fly status` checked immediately afterward: exactly two `app` machines, both `started`, no additional machine provisioned during the test.
 
 ## Impact
 
